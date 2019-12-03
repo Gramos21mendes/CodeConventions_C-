@@ -1,0 +1,681 @@
+= Code Conventions for C-Sharp 
+v1.0, 2019-12-01
+
+== About the language 
+
+C# is intended as the evolution of the C++ language. The # symbol reassembles four `+` symbols put in 2x2 matrix <<AToZCSharp>> indicating C# is C&plus;&plus;&plus;&plus;.
+
+C# is a language in the .NET family of programming languages that allow you to create programs that compile to the CRL standard and run in compatible virtual machines. Nowadays there are several flavors of the .NET frameworks but all have C# in common. Other languages in the .NET family are Visual Basic .NET , F# an J#, to name a few. We prefer C# to these other languages when targeting the .NET platform.
+
+C# does not have primitive types like other languages have. Some types, called `struct`s - a concept inherited com the C language - do not have identity, can exist only in the stack, allow for low-memory overhead and are used, mainly, in leu of primitives. Other have identify and exist in the heap. This difference results in some corner cases that this document's best practices try to avoid.
+
+C# also introduces a unique concept called Extension Methods that allows for extending types without changing, or even having access to, their code. Extension Methods then allow for the LINQ technology that vastly simplifies many use cases.
+
+WARNING: C# allows for unsafe operations and pointer manipulation. These capacities are not allowed in any form by this convention.
+
+== Capitalization Styles
+
+C# is case sensitive. The case convention for names of code elements is defined according to the kind of element. Two case styles are used: Pascal Case and Camel Case.
+
+== File Organization
+
+=== One source file per type
+
+Put every public type (class, interface, annotation or enum) in a separate file and name the file like the type name (with .cs as extension).
+
+Enum types can be put in the same file as _interfaces_, but only if the enum is used in the interface contract and only used in association with that interface. If the enum is used as a property of other types it should have its own file.
+
+=== Namespace
+
+Each type must belong on a namespace. In C# namespaces do not correspond to a folder structure. This can be useful, but is normally confusing. Consider mapping non root namespace with a folder inside the assembly’s project.
+
+=== Ordering
+
+C# source files have the following ordering:
+
+* using statements
+* namespace statement
+* type declarations (class , interface, enum or annotation) 
+
+Inside the type declaration the order of its members follow the general order dictated in the General Coding Conventions guide.
+
+== C# Naming Conventions
+
+=== Namespace
+
+Prefer not to concatenate names. Prefer simpler names for namespaces and composed names for types. Names must always be in Pascal Case.
+
+Is a namespace and type name clash consider using the plural form the namespace. For example `My.Collections` vs `My.Collections.Collection`
+
+=== Types
+
+==== Class
+
+Always name classes with nouns or noun phrases. Class names are always written in Pascal Case.
+
+The public class is always declare in a file with the same name as the class. No two public classes are to be declared in the same file.
+
+==== Interface
+
+Always name interfaces with adverbs, nouns or noun phrases. Interface names are always written in Pascal Case. All Interface names always begin with an “I” like `IEnumerable`.
+
+The public interface is declare in a file with the same name as the interface. No two public interfaces are to be declared in the same file.
+
+==== Enum
+
+Enum type names and values are always written in Pascal Case. Never prefix or suffix the enum type or the enum values. You must always use singular names for standard enums. Only use plural names for bit fields enums (flags). 
+
+Always write (standard enum):
+
+[source, csharp]
+----
+//C# 
+// normal enum
+public enum Suit {
+
+	Hearts,
+	Clubs,
+	Spades,
+	Diamonds
+
+}
+----
+
+Always write (flags enum):
+
+[source, csharp]
+----
+//C# 
+// flag enum
+[Flags]
+enum Days
+{
+    None = 0x0,
+    Sunday = 0x1,
+    Monday = 0x2,
+    Tuesday = 0x4,
+    Wednesday = 0x8,
+    Thursday = 0x10,
+    Friday = 0x20,
+    Saturday = 0x40
+}
+----
+
+A public enum is always declare in a file with the same name as the type. No two public enums are to be declared in the same file.
+
+
+==== Extension Classes/Methods
+
+Extension classes are static classes that contain extension methods. Extensions methods for a type named _Type_ should preferably be placed in a static class called __Type__Extension.  For interfaces the "I" can be omitted from the type name. Extension classes should be only for extension methods and never may contain non-extension code.
+
+Extension methods must avoid calling other extension methods outside the same static class. Inside the same static class a extension method must always call another extension method using the static call syntax.
+
+Avoid
+
+[source, csharp]
+----
+public static A ToA(this B someB){ … }
+
+public static A UseToA(this B someB){
+
+    var a = someB.ToA(); // called as an extension method
+
+}
+----
+
+Prefer
+
+[source, csharp]
+----
+public static A ToA(this B someB){ … }
+
+public static A UseToA(this B someB){
+
+    var a = ToA(someB); // called as static method
+
+}
+----
+
+Extension methods should have "hide-by-name" semantics with instance members on the type. This means that any accessible instance member on a type will always shadow any extension methods with the same name, even if the extension method is a better fit. As a result, if an instance member is ever added to a type with the same name as an extension method, then the extension method can be rendered uncallable.
+
+A public extension class is always declare in a file with the same name as the type. No two public extension classes are to be declared in the same file.
+
+===== Extension Methods for Enums 
+
+In C# you cannot declare methods in enums. They are pure value objects. This is annoying and forbids uses of enums as basis for patterns like the State Pattern. To simulate methods in enums, extension methods for that enum are often used. In this case , where you use extensions methods for enums, prefer declaring the extensions classes in the same file as the enum, even if both are public.
+
+
+[source, csharp]
+----
+//C# 
+// normal enum
+public enum Suit {
+
+	Hearts,
+	Clubs,
+	Spades,
+	Diamonds
+
+}
+
+// enum extension methods
+
+public static class SuitExtention {
+
+	public bool IsRed (){
+		return this == Hearts || this == Diamonds;
+	}
+	 
+	public bool IsBlack (){
+		return this == Clubs || this == Spades;
+	}
+
+}
+
+----
+
+=== Members
+
+==== ReadOnly and Const Fields
+
+Use nouns or noun phases for names of read only or constant fields. Use Pascal Case.
+
+==== Variables and Parameters and non Const Fields
+
+Do not use abbreviations. Write explicit, descriptive, names that hint to the purpose of the variable in it's scope and are enough to determine the meaning and it’s type. Never use Hungarian notation.
+
+You must prefix Boolean variables with “is”, “has”, or “can” as they represent answer to questions.
+
+Fields, Variables and Parameters names are written in Camel Case.
+
+==== Method Names
+
+Name methods using verb or verb phrases. Use Pascal Case. Use the imperative mood in general and use an interrogative form for methods that return Boolean values. (Example: `IsDelayed()`, `HasPermission()` or `CanStartComunication()`)
+
+==== Property Names
+
+Name properties with nouns or noun phrases. Use Pascal Casing. For non-primitive properties, consider naming the property with the same name has its type. Prefix Boolean properties as you would Boolean variables.
+
+== Comments
+
+=== Block Comments
+
+Block comments should usually be avoided. For descriptions use the /// comments to give C# standard descriptions is recommended. When you wish to use block comments you should use the following style:
+
+[source, csharp]
+----
+/* Line 1 +
+* Line 2 +
+* Line 3 +
+*/
+----
+
+As this will set off the block visually from code for the (human) reader. Alternatively you might use this old-fashioned C style for single line comments, even though it is not recommended. In case you use this style, a line break should follow the comment, as it is hard to see code preceded by comments in the same line:
+
+[source, csharp]
+----
+/* blah blah blah */
+----
+
+=== Single Line Comments
+
+You should use the `//` comment style to "comment out" code (Visual Studio has Ctrl+k,c) . It may be used for commenting sections of code too. Single line comments must be indented to the indent level when they are used for code documentation. Commented out code should be commented out in the first line to enhance the visibility of commented out code. A rule of thumb says that generally, the length of a comment should not exceed the length of the code explained by too much, as this is an indication of too complicated, potentially buggy, code.
+
+=== Documentation Comments
+
+In the .net Framework, Microsoft was introduced a documentation generation system based on XML comments. These comments are formally single line C# comments containing http://www.csharpfriends.com/articles/getarticle.aspx?articleid=336[XML tags]. They follow this pattern for single line comments:
+
+[source, csharp]
+----
+/// <summary> +
+/// This class... +
+/// </summary>
+----
+
+Multiline XML comments follow this pattern:
+
+[source, csharp]
+----
+/// <exception cref=”BogusException”> +
+/// This exception gets thrown as soon as a +
+/// Bogus flag gets set. +
+/// </exception>
+----
+
+All lines must be preceded by three slashes to be accepted as XML http://www.csharpfriends.com/articles/getarticle.aspx?articleid=336[comment lines]. Tags fall into two categories; documentation items and formatting/ referencing
+
+The first category contains tags like `<summary>`, `<param>` or `<exception>`. These represent items that represent the elements of a program's API which must be documented for the program to be useful to other programmers. These tags usually have attributes such as name or cref as demonstrated in the multiline example above. These attributes are checked by the compiler, so they should be valid. The latter category governs the layout of the documentation, using tags such as `<code>`, `<list>` or `<para>`.
+
+Documentation can then be generated using the 'documentation' item in the #develop 'build' menu. The documentation generated is in HTMLHelp format. For a fuller explanation of XML comments see the Microsoft .net framework SDK documentation. For information on commenting best practice and further issues related to commenting, see the TechNote 'The fine Art of Commenting'.
+
+== Typography
+
+=== Indentation
+
+Follow the General Code Conventions guide with respect to indentation. Use 4 spaces has unit of indentation.
+
+NOTE: In Visual Studio you can smart-indent a source file by using the Ctrl+K+D hot keys
+
+=== Curly braces
+
+Curly braces `{ }` should be positioned at the same level as the code outside the braces. This is a C# specific rule.
+
+[source, csharp]
+----
+if ( … )
+{ 
+	// Do something 
+	// …
+
+	return false; 
+} 
+else 
+{ 
+	// Do something else
+
+	return true; 
+}
+----
+
+==== Single line Curly braces
+
+Always use curly braces in `if` and loops clauses even if they have only have one statement [3][11]. Typographically these maintain symmetry and focus the reader’s attention inside the braces. Semantically is the reversed from the superfluous scopes principle. The braces after a directive are not superfluous and hence should not be avoided.
+
+Never write:
+
+[source, csharp]
+----
+if ( … )
+	return 42;
+
+for (int i = 0; i < max; i++)
+	count++;
+
+foreach (var element in collection)
+	element.Active = true;
+----
+
+Always write:
+
+[source, csharp]
+----
+if ( … ) 
+{
+	return 42; 
+}
+
+for (int i = 0; i < max; i++)
+{
+	count++;
+}
+
+foreach (var element in collection)
+{
+	element.Active = true;
+}
+----
+
+== Statements
+
+Follow the guidelines in the General Code Convention guide for statements, but use the curly braces positioning rule specific to C#. Some examples:
+
+[source, csharp]
+----
+if (condition) 
+{ 
+	DoSomething(); 
+	... 
+} 
+
+if (condition) 
+{ 
+	DoSomething(); 
+	... 
+} 
+else 
+{ 
+	DoSomethingOther(); 
+	... 
+}
+
+foreach (int i in IntList) 
+{ 
+	... 
+}
+
+while (condition) 
+{ 
+	... 
+}
+
+do 
+{ 
+	... 
+} while (condition);
+
+switch (condition) 
+{ 
+	case A: 
+		... 
+		break; 
+	case B: 
+		... 
+		break; 
+	default: 
+		... 
+}
+
+try 
+{ 
+	... 
+} 
+catch (Exception e) 
+{ 
+	... 
+}
+----
+
+=== Object Initializers Statements
+
+When using object initializers always omit the parenthesis <<AmbiguousOptionalParentheses>>.
+
+Avoid:
+
+[source, csharp]
+----
+var client = new Client () { 
+	Name = "John"
+}
+----
+
+Prefer:
+
+[source, csharp]
+----
+var client = new Client { 
+	Name = "John"
+}
+----
+
+Always use initializers with parameterless constructors. If you are creating an instance of the class using a constructor with parameters then never use object initializers.
+
+=== Visibility
+
+Do not make any instance or class field public, make them private. Consider using properties instead. You may use public static fields (or const) as an exception to this rule, but you should justify not following the rule.
+
+=== Cast, `as` and `is`
+
+When casting, use the casting idiom or the `as` keyword.
+
+[source, csharp]
+----
+var dog = (Dog) animal
+
+var dog = animal as Dog
+----
+
+If animal is `null` the result is `null` in both. If animal is not an instance of `Dog` the cast instruction will throw an exception while as will simply return `null`.
+
+always use the `as` idiom instanced of this idiom:
+
+Never write : 
+
+[source, csharp]
+----
+if (animal is Dog) 
+{ 
+	var dog = (Dog) animal; 
+	… 
+}
+----
+
+Is preferable to check for `null`:
+
+[source, csharp]
+----
+var dog = animal as Dog; 
+if (dog != null) 
+{ 
+	… 
+}
+----
+
+=== Use `var` where possible
+
+C# is a strong typed language and the compiler can infer the variables type from the right side assignment. When the inference of type is possible and obvious from the right side assigned prefer using the `var` keyword instead of the actual type for the variable. The `var` keyword can only be used for variable inside methods.
+
+Never use `var` when the type is not apparent from the right side of the assignment <<varConventions>>.
+
+[source, csharp]
+----
+// When the type of a variable is not clear from the context, always use an explicit type.
+int resultSoFar = ExampleClass.ResultSoFar();
+----
+
+[[use-linq-where-possible]]
+=== Always use LINQ where possible
+
+LINQ (Language Integrated Query) is a fluent way to write and execute complex filtering and transforming of sets of data commonly known as “queries”
+
+LINQ to Collections operates over any IEnumerable and should be used instead of for instructions as it improves readability and can enhance performance.
+
+LINQ to SQL operates over any IDataSet and should be used instead of SQL and/or ADO instructions as it improves readability and maintenance.
+
+LINQ also provides parallelization capabilities that can, and should be used, wherever possible to enhance performance.
+
+Always use the API version of LINQ and not the keyword derived version.
+
+[source, csharp]
+----
+//C#
+var cities = addressList.Where( address => addres.State == ”SP”).Select(a => a.City);
+----
+
+Do not use:
+
+[source, csharp]
+----
+//C#
+var cities = from address in addressList
+             where address => addres.State == ”SP”
+             select a.City;
+----
+
+=== Consider Named Arguments for Boolean Parameters
+
+According to the general guide you should avoid boolean parameters in methods. Sometimes this is not possible. For those occasions consider using named arguments to clarify the meaning of the boolean value. For example, if you have the following constructor:
+
+
+[source, csharp]
+----
+//C#
+public class  Sponsor {
+	
+	public Sponsor (string name, bool external){
+		...
+	}
+
+}
+----
+
+normally we invoke it like:
+
+[source, csharp]
+----
+//C#
+var sponsor = new Sponsor("InterPlayers", false);
+----
+
+consider invoking it like:
+
+[source, csharp]
+----
+//C#
+var sponsor = new Sponsor("InterPlayers", external: false);
+----
+
+
+==== Prefer Omitting the Exception variable when not using it
+
+C# allows you to omit the exception variable in the `catch` clause if you are not using it in the clause body. Avoid declaring the exception variable if you are not using it in the clause body.
+
+Avoid:
+
+[source, csharp]
+----
+//C#
+try 
+{
+	....
+} 
+catch(Exception ex) // the exception is declared
+{
+	DoSomething(); // but is not use
+}
+----
+
+Prefer:
+
+[source, csharp]
+----
+//C#
+try 
+{
+	....
+} 
+catch(Exception) // the exception is not declared
+{
+	DoSomething(); // because is not used
+}
+----
+
+==== Always notice the difference between throw and rethrow
+
+C# comes the concept of re-throw. This two version of the code do different things:
+
+Version 1 (throw):
+[source, csharp]
+----
+//C#
+try 
+{
+	....
+} 
+catch(Exception ex) 
+{
+	DoSomething(ex);
+    throw ex;
+}
+----
+
+Version 2 (rethrow):
+[source, csharp]
+----
+//C#
+try 
+{
+	....
+} 
+catch(Exception ex) 
+{
+	DoSomething(ex);
+    throw;
+}
+----
+
+The code in version 2 handles the exception in some way but allows the same exception to propagate. There is not a new throw, only an interception of the exception occurrence. The code in version 1 will handle the exception and then raise a new exception based on the given exception (losing the previous stack trace). You are really raising a new exception and not only intercepting. Always use the form exemplified in version 2 when you only need to intercept the exception occurrence and do not intend to erase the exceptions  stack trace.
+
+=== Checking for empty strings
+
+In several cases you need to determine if a given string has content. A string has content if it is not null and contains at least a character that is not a blank space. So, normally you will write:
+
+[source, csharp]
+----
+if( string.IsNullOrEmpty(text));
+
+}
+----
+
+The `isNullOrEmpty` method will not remove trailing spaces <<IsNullOrEmpty>>, so we can use of the `Trim()` method guarantees all spaces at the beginning and at the end of the string are removed, but then we have to test for `null` separately.
+
+Avoid:
+
+[source, csharp]
+----
+if( text != null && string.IsNullOrEmpty(text.Trim()));
+
+}
+----
+
+Better yet, we can use `isNullOrWhiteSpace` that does all this for us
+
+[source, csharp]
+----
+if(string.IsNullOrWhiteSpace(text));
+
+}
+----
+
+This is the preferable way.
+
+=== Concatenating Strings
+
+==== Use the `+` operator, not `concat`
+
+When concatenating strings use the `+` operator. Do not use the `concat` method.
+
+==== Use a StringBuilder in loops
+
+When concatenating strings in a loop prefer using a StringBuilder. When you use the `+` operator with strings the compiler will change the code a use a `StringBuilder`. However, the compiler not always can do this optimization, especially in loops. So, explicitly program using a `StringBuilder` inside loops.
+
+=== Interpolation
+
+For interpolating values in strings use string.Format method.
+
+[source, csharp]
+----
+var welcomeMessage = string.Format(“Welcome {0} to {1}”, username, systemName);
+----
+
+If you use interpolation heavy across your code consider implementing an extension method like
+
+[source, csharp]
+----
+var welcomeMessage = “Welcome {0} to {1}”.Interpolate(username, systemName);
+----
+
+[[references]]
+== References
+
+[[MSCodeConventions, [{counter:xrefnum}] ]] [{counter:refnum}] Code Conventions - _Microsoft_ - http://msdn.microsoft.com/en-us/library/vstudio/ff926074.aspx
+
+[[MSCapsConventions, [{counter:xrefnum}] ]] [{counter:refnum}] Capitalization Conventions - _Microsoft_ - http://msdn.microsoft.com/en-us/library/vstudio/ms229043(v=vs.100).aspx
+
+[[varConventions, [{counter:xrefnum}] ]] [{counter:refnum}] C# Coding Conventions - _Microsoft_ - https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/inside-a-program/coding-conventions
+
+[[CleanCode, [{counter:xrefnum}] ]] [{counter:refnum}] *Clean Code – A handbook of agile software craftsmanship* - _Robert C. Martin_ - Prentice Hall
+
+[[Technotes, [{counter:xrefnum}] ]] [{counter:refnum}] Technotes, HowTo Series - C# Coding Style Guide - http://www.csharpfriends.com/articles/getarticle.aspx?articleid=336#
+
+[[CSharpConventions, [{counter:xrefnum}] ]] [{counter:refnum}] C# code Conventions and good practices - http://www.slideshare.net/tranquangminhtan/c-conventions-good-practices
+
+[[ExtensionMethods, [{counter:xrefnum}] ]] [{counter:refnum}] Extension Methods Best Practices - http://blogs.msdn.com/b/vbteam/archive/2007/03/10/extension-methods-best-practices-extension-methods-part-6.aspx
+
+[[ExtensionMethodsGuide, [{counter:xrefnum}] ]] [{counter:refnum}] Extension Method Guidelines Rebuffed - http://msmvps.com/blogs/p3net/archive/2010/09/18/extension-method-guidelines-rebuffed.aspx
+
+[[EnumsGuide, [{counter:xrefnum}] ]] [{counter:refnum}] Enum Type Naming Guidelines - http://msdn.microsoft.com/en-us/library/4x252001%28VS.71%29.aspx
+
+[[NamingGuide, [{counter:xrefnum}] ]] [{counter:refnum}] Naming Guidelines - http://msdn.microsoft.com/en-us/library/xzf533w0%28v=vs.71%29.aspx
+
+[[AmbiguousOptionalParentheses, [{counter:xrefnum}] ]] [{counter:refnum}] Ambiguous Optional Parentheses - http://blogs.msdn.com/b/ericlippert/archive/2010/09/20/ambiguous-optional-parentheses.aspx
+
+[[NETFrameworkGuide, [{counter:xrefnum}] ]] [{counter:refnum}] .NET Framework Guide Lines - http://blogs.msdn.com/b/brada/archive/2005/01/26/361363.aspx
+
+[[ThomasM, [{counter:xrefnum}] ]] [{counter:refnum}] *Practical software maintenance: Best practices for managing your software investment.* - _Thomas M. Pigoski, 1997 - Wiley Computer Pub. (New York)_
+
+[[BigO, [{counter:xrefnum}] ]] [{counter:refnum}] Big O Notation -https://en.wikipedia.org/wiki/Big_O_notation
+
+[[AToZCSharp, [{counter:xrefnum}] ]] [{counter:refnum}] The A-Z of Programming Languages: C# - https://www.computerworld.com.au/article/261958/a-z_programming_languages_c_/?pp=2
+
+[[IsNullOrEmpty, [{counter:xrefnum}] ]] [{counter:refnum}] String.IsNullOrEmpty - https://msdn.microsoft.com/en-us/library/system.string.isnullorempty(v=vs.110).aspx
+
